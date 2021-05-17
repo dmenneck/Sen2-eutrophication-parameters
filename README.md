@@ -14,7 +14,7 @@ In order to run this script you need to have the following dependencies installe
 ## Usage
 
 ```shell
-python -W ignore main.py in="c:\Users\<your_username>\Desktop\data_1" shape="c:\Users\<your_username>\Desktop\lake_shape.shp" statistics
+python -W ignore main.py in="c:\Users\<your_username>\Desktop\data" shape="c:\Users\<your_username>\Desktop\lake_shape.shp" statistics
 ```
   * `in=` path to the sentinel-2 data folder
   * if you'd like to clip your region with a polygon then reference the path to your shapefile `shape=` (shape and satellite data must have the same crs)
