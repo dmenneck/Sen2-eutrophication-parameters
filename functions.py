@@ -21,11 +21,11 @@ def sd(B2, B3):  # in meters
 
 def clipRaster(band, shape):
     band_clip = gdal.Warp(
-        "_.tif", band, cutlineDSName=shape, dstNodata = 0)
+        "_.tif", band, cutlineDSName=shape, dstNodata=0)
 
     band_clip = band_clip.ReadAsArray().astype(np.float)
 
-    return band_clip # delete zeros
+    return band_clip  # delete zeros
 
 
 def array2raster(originalImage, newImage, array):
