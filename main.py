@@ -7,7 +7,7 @@ import math
 import shutil
 from osgeo import gdal, osr, ogr
 
-from functions import array2raster, chla, turbidity, mci, clipRaster, sd
+from functions import array2raster, chla, turbidity, clipRaster, sd
 
 np.errstate(invalid='ignore', divide='ignore')
 

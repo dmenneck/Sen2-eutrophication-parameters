@@ -2,10 +2,6 @@ from osgeo import gdal, osr, ogr
 import numpy as np
 
 
-def mci(B4, B5, B6):
-    return B5 - 1.005 * (B4 + ((B6 - B4) * (0.705 - 0.665) / (0.740 - 0.665)))
-
-
 def chla(B4, B5):
     # return (1/B4 - 1/B5) * B6
     return 127.63 * (B5 / B4) - 99.2
