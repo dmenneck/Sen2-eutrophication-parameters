@@ -23,5 +23,7 @@ python -W ignore main.py in="c:\Users\<your_username>\Desktop\data_1" shape="c:\
 
 ## Literature
 
-[1]: Grendaite, D., Stonevicius, E., Karosiene, J., Savadova, K., Kasperoviciene, J., 2018. Chlorophyll-a concentration retrieval in eutrophic lakes in Lithuania from Sentinel-2 data. Geologija. Geografija 4 (1), 15-28.
-[2]: Esri, 2021. River Turbidity Estimation using Sentinel-2 data, https://developers.arcgis.com/python/sample-notebooks/river-turbidity-estimation-using-sentinel2-data-/
+- [1]: Grendaite et al., 2018. Chlorophyll-a concentration retrieval in eutrophic lakes in Lithuania from Sentinel-2 data. Geologija. Geografija 4 (1), 15-28.
+- [2]: Esri, 2021. River Turbidity Estimation using Sentinel-2 data, https://developers.arcgis.com/python/sample-notebooks/river-turbidity-estimation-using-sentinel2-data-/
+- [3]: Delegido et al., 2019. Turbidity and Secchi disc depth with Sentinel-2 in different trophic status reservoirs at the 
+Comunidad Valenciana
