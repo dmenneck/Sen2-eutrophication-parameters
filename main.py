@@ -1,11 +1,7 @@
 import numpy as np
 import os
 import sys
-import matplotlib.pyplot as plt
-import joblib
-import math
-import shutil
-from osgeo import gdal, osr, ogr
+from osgeo import gdal
 
 from functions import array2raster, chla, turbidity, clipRaster, sd
 
