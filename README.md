@@ -2,7 +2,7 @@
 This python script uses Sentinel-2 products (L2A) to display the spatial distribution of three
 relevant indicators of eutrophication: [1]: chlorophyll-a, [2]: turbidity, [3]: secchi disk transparency
 
---- add image here ---
+![image info](../assets/overview.PNG)
 
 Feel free to open a pull request to add a new eutrophication algorithm to the script.
 
