@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import inf
 import os
 import sys
 from osgeo import gdal
@@ -9,11 +10,9 @@ np.errstate(invalid='ignore', divide='ignore')
 
 gdal.UseExceptions()
 
-shapePath = None
-shouldClip = False
-_input = None
-statistics = False
-chla_rasters = []
+shapePath, _input = None, None
+shouldClip, statistics = False, False
+chla_rasters, chla_means = [], []
 amountOfScenes, currentScene = 0, 1
 
 # number of arguments passed with script call
@@ -129,6 +128,14 @@ if _input is not None:
         # chlorophyll a
         chla_calc = chla(B4_array, B5_array)
         chla_rasters.append(chla_calc)
+
+        # replace inf with 0
+        chla_calc[chla_calc == inf] = 0
+        print(np.isinf(chla_calc).any())  # check if inf is still in dataset
+
+        # add mean to list
+        chla_means.append(np.nanmean(chla_calc))
+
         newImage = _input + f"\processed\_chla_{date}.tif"
         array2raster(os.listdir(joined_path)[0], newImage, chla_calc)
 
@@ -161,6 +168,8 @@ if _input is not None:
         currentScene = currentScene + 1
 
     print("Done creating water quality parameters", flush=True)
+
+    print(chla_means)
 
     # calculate statistics
     if statistics:
