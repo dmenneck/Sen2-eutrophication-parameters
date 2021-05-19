@@ -18,7 +18,7 @@ amountOfScenes, currentScene = 0, 1
 # number of arguments passed with script call
 arguments = sys.argv
 
-# loop over input arguments and find input and output, skip first argument (main.py)
+# loop over input arguments and find input and output
 for arg in arguments[1:]:
     if "in=" in arg:
         _input = arg[3:]
@@ -28,11 +28,9 @@ for arg in arguments[1:]:
     if "statistics" in arg:
         statistics = True
 
-
 # check invalid input
 if _input is None:
     print("Please enter input path to your data")
-
 
 dir_names = os.listdir(_input)
 
@@ -76,83 +74,61 @@ if _input is not None:
         day = date[6:8]
         date = f'{day}.{month}.{year}'
 
-        # create folder for specific year
-        # check if folder already exists
+        # create folder for specific year and check if it already exists
         if not os.path.exists(_input + f'\processed\/{date}'):
             # create new folder
             os.makedirs(_input + f'\processed\/{date}')
 
+        band_names = ['B02', 'B03', 'B04', 'B05',
+                      'B06', 'B07', 'B11', 'B12', 'B8A']
+
+        gdal_bands = []
+
+        # open gdal bands
         for band in os.listdir(joined_path):
-            if "B02" in band:
-                B2 = gdal.Open(band)
-            if "B03" in band:
-                B3 = gdal.Open(band)
-            if "B04" in band:
-                B4 = gdal.Open(band)
-            if "B05" in band:
-                B5 = gdal.Open(band)
-            if "B06" in band:
-                B6 = gdal.Open(band)
-            if "B07" in band:
-                B7 = gdal.Open(band)
-            if "B8A" in band:
-                B8a = gdal.Open(band)
-            if "B11" in band:
-                B11 = gdal.Open(band)
-            if "B12" in band:
-                B12 = gdal.Open(band)
+            if band[-11:-8] in band_names:
+                temp = gdal.Open(band)
+                gdal_bands.append(temp)
 
-        # .astype(np.float) not needed -> same results
-        B2_array = B2.ReadAsArray()
-        B3_array = B3.ReadAsArray()
-        B4_array = B4.ReadAsArray()
-        B5_array = B5.ReadAsArray()
-        B6_array = B6.ReadAsArray()
-        B7_array = B7.ReadAsArray()
-        B8a_array = B8a.ReadAsArray()
-        B11_array = B11.ReadAsArray()
-        B12_array = B12.ReadAsArray()
+        bands_array = []
 
-        # clip each raster with polygon
+        # read gdal bands as array
+        for band in gdal_bands:
+            bands_array.append(band.ReadAsArray())
+
         if shouldClip:
-            B2_array = clipRaster(B2, shapePath)
-            B3_array = clipRaster(B3, shapePath)
-            B4_array = clipRaster(B4, shapePath)
-            B5_array = clipRaster(B5, shapePath)
-            B6_array = clipRaster(B6, shapePath)
-            B7_array = clipRaster(B7, shapePath)
-            B8a_array = clipRaster(B8a, shapePath)
-            B11_array = clipRaster(B11, shapePath)
-            B12_array = clipRaster(B12, shapePath)
+            # clip raster
+            for index, array in enumerate(gdal_bands):
+                clipped = clipRaster(gdal_bands[index], shapePath)
+                # overwrite band with clipped band
+                bands_array[index] = clipped
 
         # chlorophyll a
-        chla_calc = chla(B4_array, B5_array)
+        chla_calc = chla(bands_array[2], bands_array[3])
+        # append to list for future statistical analysis
         chla_rasters.append(chla_calc)
 
-        # replace inf with 0
-        chla_calc[chla_calc == inf] = 0
-        print(np.isinf(chla_calc).any())  # check if inf is still in dataset
+        # replace inf with nan
+        chla_calc[chla_calc == inf] = np.nan
+        # check if inf is still in dataset
+        # print(np.isinf(chla_calc).any())
 
         # add mean to list
         chla_means.append(np.nanmean(chla_calc))
 
+        # create tif
         newImage = _input + f"\processed\_chla_{date}.tif"
         array2raster(os.listdir(joined_path)[0], newImage, chla_calc)
 
         # turbidity
-        tt_calc = turbidity(B3_array, B4_array)
+        tt_calc = turbidity(bands_array[1], bands_array[2])
         newImage_2 = _input + f"\processed\_turbidity_{date}.tif"
         array2raster(os.listdir(joined_path)[0], newImage_2, tt_calc)
 
-        # turbidity
-        sd_calc = sd(B2_array, B3_array)
+        # sd
+        sd_calc = sd(bands_array[0], bands_array[1])
         newImage_2 = _input + f"\processed\_sd_{date}.tif"
         array2raster(os.listdir(joined_path)[0], newImage_2, sd_calc)
-
-        # mci
-        # mci_calc = mci(B4_array, B5_array, B6_array)
-        # newImage_2 = _input + f"\processed\_mci{date}.tif"
-        # array2raster(os.listdir(joined_path)[0], newImage_2, mci_calc)
 
         #  move into specific folder
         files = ["_chla", "_turbidity", "_sd"]
