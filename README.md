@@ -21,6 +21,22 @@ python -W ignore main.py in="c:\Users\<your_username>\Desktop\data" shape="c:\Us
   * `statistics` add this flag if the mean, min, max, variance and standard deviation should be calculated
   * `-W ignore` to ignore numpys "RuntimeWarning: divide by zero encountered" error message
 
+### Folder structure
+
+Make sure your data folder contains only the Sentinel-2 data with the original folder structure. The `processed` folder will be 
+created by the script.  
+
+```
+data
+└───S2A_MSIL2A_20200217T190441_N0214_R013_T10SEJ_20200217T230414.SAFE
+└───S2A_MSIL2A_20200414T184921_N0214_R113_T10SEJ_20200414T230546.SAFE
+└───S2B_MSIL2A_20200618T184919_N0214_R113_T10SEJ_20200618T224552.SAFE
+└───etc.
+└───processed
+```
+
+The path to the image data should be as follows `GRANULE -> L2... -> IMG_DATA`.
+
 ## Literature
 
 - [1]: Grendaite et al., 2018. Chlorophyll-a concentration retrieval in eutrophic lakes in Lithuania from Sentinel-2 data. Geologija. Geografija 4 (1), 15-28.
