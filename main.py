@@ -2,6 +2,8 @@ import numpy as np
 from numpy import inf
 import os
 import sys
+import matplotlib.pyplot as plt
+from datetime import datetime
 from osgeo import gdal
 
 from functions import array2raster, chla, turbidity, clipRaster, sd
@@ -11,8 +13,9 @@ np.errstate(invalid='ignore', divide='ignore')
 gdal.UseExceptions()
 
 shapePath, _input = None, None
-shouldClip, statistics = False, False
-chla_rasters, chla_means = [], []
+shouldClip, statistics, plot = False, False, False
+chla_rasters, turbidity_rasters, secchi_rasters,  dates = [], [], [], []
+chla_means, turbidity_means, sd_means = [], [], []
 amountOfScenes, currentScene = 0, 1
 
 # number of arguments passed with script call
@@ -27,6 +30,8 @@ for arg in arguments[1:]:
         shapePath = arg[6:]
     if "statistics" in arg:
         statistics = True
+    if "plot" in arg:
+        plot = True
 
 # check invalid input
 if _input is None:
@@ -54,9 +59,6 @@ if _input is not None:
         if folder == "processed":
             continue
 
-        if folder == "temp":
-            continue
-
         print(f'{currentScene}/{amountOfScenes}', flush=True)
 
         # move to processed directory
@@ -72,7 +74,8 @@ if _input is not None:
         year = date[:4]
         month = date[4:6]
         day = date[6:8]
-        date = f'{day}.{month}.{year}'
+        date = f'{day}-{month}-{year}'
+        dates.append(date)
 
         # create folder for specific year and check if it already exists
         if not os.path.exists(_input + f'\processed\/{date}'):
@@ -107,28 +110,32 @@ if _input is not None:
         chla_calc = chla(bands_array[2], bands_array[3])
         # append to list for future statistical analysis
         chla_rasters.append(chla_calc)
-
         # replace inf with nan
         chla_calc[chla_calc == inf] = np.nan
         # check if inf is still in dataset
         # print(np.isinf(chla_calc).any())
-
         # add mean to list
         chla_means.append(np.nanmean(chla_calc))
-
-        # create tif
-        newImage = _input + f"\processed\_chla_{date}.tif"
-        array2raster(os.listdir(joined_path)[0], newImage, chla_calc)
+        image = _input + f"\processed\_chla_{date}.tif"
+        array2raster(os.listdir(joined_path)[0], image, chla_calc)
 
         # turbidity
-        tt_calc = turbidity(bands_array[1], bands_array[2])
-        newImage_2 = _input + f"\processed\_turbidity_{date}.tif"
-        array2raster(os.listdir(joined_path)[0], newImage_2, tt_calc)
+        turbidity_calc = turbidity(bands_array[1], bands_array[2])
+        turbidity_rasters.append(turbidity_calc)
+        turbidity_calc[turbidity_calc == inf] = np.nan
+        turbidity_means.append(np.nanmean(turbidity_calc))
+
+        image = _input + f"\processed\_turbidity_{date}.tif"
+        array2raster(os.listdir(joined_path)[0], image, turbidity_calc)
 
         # sd
-        sd_calc = sd(bands_array[0], bands_array[1])
-        newImage_2 = _input + f"\processed\_sd_{date}.tif"
-        array2raster(os.listdir(joined_path)[0], newImage_2, sd_calc)
+        secchi_calc = sd(bands_array[0], bands_array[1])
+        secchi_rasters.append(secchi_calc)
+        secchi_calc[secchi_calc == inf] = np.nan
+        sd_means.append(np.nanmean(secchi_calc))
+
+        image = _input + f"\processed\_sd_{date}.tif"
+        array2raster(os.listdir(joined_path)[0], image, secchi_calc)
 
         #  move into specific folder
         files = ["_chla", "_turbidity", "_sd"]
@@ -145,8 +152,6 @@ if _input is not None:
 
     print("Done creating water quality parameters", flush=True)
 
-    print(chla_means)
-
     # calculate statistics
     if statistics:
         print("Creating statistics folder...", flush=True)
@@ -155,46 +160,97 @@ if _input is not None:
         if not os.path.exists(_input + "\processed\statistics"):
             # create new folder
             os.makedirs(_input + "\processed\statistics")
+            os.makedirs(_input + "\processed\statistics\chla")
+            os.makedirs(_input + "\processed\statistics\sd")
+            os.makedirs(_input + "\processed\statistics\/turbidity")
 
         print("Calculating statistics...", flush=True)
 
-        np_array = np.array(chla_rasters)  # convert python list to np.array
+        # convert python list to np.array
+        parameters = [np.array(chla_rasters), np.array(
+            turbidity_rasters), np.array(secchi_rasters)]
+        folder_names = ['chla', 'turbidity', 'sd']
 
-        # mean
-        newImage_2 = _input + f"\processed\_mean.tif"
-        array2raster(os.listdir(joined_path)[
-                     0], newImage_2, np_array.mean(axis=0))
+        for i in range(len(parameters)):
+            # mean
+            image = _input + f"\processed\_mean.tif"
+            array2raster(os.listdir(joined_path)[
+                0], image, parameters[i].mean(axis=0))
+            # std
+            image = _input + f"\processed\_std.tif"
+            array2raster(os.listdir(joined_path)[
+                0], image, parameters[i].std(axis=0))
+            # var
+            image = _input + f"\processed\_var.tif"
+            array2raster(os.listdir(joined_path)[
+                0], image, parameters[i].var(axis=0))
+            # min
+            image = _input + f"\processed\_min.tif"
+            array2raster(os.listdir(joined_path)[
+                0], image, parameters[i].min(axis=0))
+            # max
+            image = _input + f"\processed\_max.tif"
+            array2raster(os.listdir(joined_path)[
+                0], image, parameters[i].max(axis=0))
 
-        # std
-        newImage_2 = _input + f"\processed\_std.tif"
-        array2raster(os.listdir(joined_path)[
-                     0], newImage_2, np_array.std(axis=0))
+            #  move into statistics folder
+            files = ["_mean", "_std", "_var", "_min", "_max"]
+            dir_names = os.listdir(_input + "\processed")
 
-        # var
-        newImage_2 = _input + f"\processed\_var.tif"
-        array2raster(os.listdir(joined_path)[
-                     0], newImage_2, np_array.var(axis=0))
+            for file in dir_names:
+                for endings in files:
+                    if endings in file:
+                        # move a file by renaming it's path
+                        os.rename(_input + "\processed\/" + file, _input +
+                                  "\processed\statistics\/" + folder_names[i] + "/" + file)
 
-        # min
-        newImage_2 = _input + f"\processed\_min.tif"
-        array2raster(os.listdir(joined_path)[
-                     0], newImage_2, np_array.min(axis=0))
+    if plot:
+        # Means are currently not sorted by date. Create dict from date and means list.
+        chla_dict = dict(zip(dates, chla_means))
+        turb_dict = dict(zip(dates, turbidity_means))
+        sd_dict = dict(zip(dates, sd_means))
+        # order dict by date
+        chla_ordered = sorted(chla_dict.items(), key=lambda x: datetime.strptime(
+            x[0], '%d-%m-%Y'), reverse=False)
+        turb_ordered = sorted(turb_dict.items(), key=lambda x: datetime.strptime(
+            x[0], '%d-%m-%Y'), reverse=False)
+        sd_ordered = sorted(sd_dict.items(), key=lambda x: datetime.strptime(
+            x[0], '%d-%m-%Y'), reverse=False)
 
-        # max
-        newImage_2 = _input + f"\processed\_max.tif"
-        array2raster(os.listdir(joined_path)[
-                     0], newImage_2, np_array.max(axis=0))
+        # list comprehension
+        chla_ordered_list = [x[0] for x in chla_ordered]
+        chla_means_ordered_list = [x[1] for x in chla_ordered]
+        turb_ordered_list = [x[0] for x in turb_ordered]
+        turb_means_ordered_list = [x[1] for x in turb_ordered]
+        sd_ordered_list = [x[0] for x in sd_ordered]
+        sd_means_ordered_list = [x[1] for x in sd_ordered]
 
-        #  move into statistics folder
-        files = ["_mean", "_std", "_var", "_min", "_max"]
-        dir_names = os.listdir(_input + "\processed")
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, True)
+        plt.style.use("seaborn")
 
-        for file in dir_names:
-            for endings in files:
-                if endings in file:
-                    # move a file by renaming it's path
-                    os.rename(_input + "\processed\/" + file, _input +
-                              "\processed\statistics\/" + file)
+        ax1.plot(chla_ordered_list, chla_means_ordered_list, color="k",
+                 marker="o", label="chla mean")
+        ax2.plot(turb_ordered_list, turb_means_ordered_list, color="k",
+                 marker="o", label="turbidity mean")
+        ax3.plot(sd_ordered_list, sd_means_ordered_list, color="k",
+                 marker="o", label="turbidity mean")
+
+        ax1.set_ylabel("Mean chlorophyll-a")
+        ax1.set_title("Water quality parameter mean values 2020")
+        # ax1.legend()
+        # ax1.grid(True)
+
+        # ax2.set_xlabel("Dates")
+        ax2.set_ylabel("Mean turbidity")
+        # ax2.legend()
+        # ax2.grid(True)
+
+        # ax3.set_xlabel("Dates")
+        ax3.set_ylabel("Mean secchi disk transparency")
+        # ax3.legend()
+        # ax3.grid(True)
+
+        plt.show()
 
     print("Done", flush=True)
 else:
